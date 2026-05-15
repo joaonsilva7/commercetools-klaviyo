@@ -18,7 +18,11 @@ export class DefaultCustomerMapper implements CustomerMapper {
             custom,
         } = customer;
         const props = mapAllowedProperties('customer.customFields', { ...(custom?.fields || {}) });
-
+        
+        const customerGroups = customer.customerGroupAssignments?.map(
+            (assignment) => assignment.customerGroup.id
+        ) || [];
+        
         return {
             data: {
                 type: 'profile',
@@ -32,7 +36,11 @@ export class DefaultCustomerMapper implements CustomerMapper {
                     phoneNumber: address?.mobile || address?.phone,
                     organization,
                     location: this.mapCTAddressToKlaviyoLocation(address),
-                    properties: Object.keys(props).length ? { ...props } : undefined,
+                    properties: {
+                        ...props,
+                        ...(customer.key ? { CUSTOMER_KEY: customer.key } : {}),
+                        ...(customerGroups.length ? { CUSTOMER_GROUPS: customerGroups } : {}),
+                    },
                 },
             },
         };
