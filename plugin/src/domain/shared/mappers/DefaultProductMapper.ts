@@ -35,8 +35,9 @@ export class DefaultProductMapper implements ProductMapper {
         const productDescription = product.masterData.current.description;
         const productSlug = product.masterData.current.slug;
         const defaultProductSlug = getLocalizedStringAsText(productSlug);
+        const masterVariantSku = product.masterData.current.masterVariant.sku || "";
         const productUrl = process.env.PRODUCT_URL_TEMPLATE
-            ? String(process.env.PRODUCT_URL_TEMPLATE).replace('{{productSlug}}', defaultProductSlug)
+            ? String(process.env.PRODUCT_URL_TEMPLATE).replace('{{productSlug}}', defaultProductSlug).replace('{{sku}}', masterVariantSku)
             : 'None';
         const productMasterVariantImages = product.masterData.current.masterVariant.images;
         const allProductCategories = product.masterData.current.categories.concat(
@@ -118,8 +119,9 @@ export class DefaultProductMapper implements ProductMapper {
         const productDescription = product.masterData.current.description;
         const productSlug = product.masterData.current.slug;
         const defaultProductSlug = getLocalizedStringAsText(productSlug);
+        const masterVariantSku = product.masterData.current.masterVariant.sku || "";
         const productUrl = process.env.PRODUCT_URL_TEMPLATE
-            ? String(process.env.PRODUCT_URL_TEMPLATE).replace('{{productSlug}}', defaultProductSlug)
+            ? String(process.env.PRODUCT_URL_TEMPLATE).replace('{{productSlug}}', defaultProductSlug).replace('{{sku}}', masterVariantSku)
             : 'None';
         const variantImages = productVariant.images;
         const variantPrice = productVariant.prices
