@@ -1,7 +1,7 @@
 import { AbstractEventProcessor } from '../abstractEventProcessor';
 import logger from '../../../../utils/log';
 import { OrderStateChangedMessage } from '@commercetools/platform-sdk/dist/declarations/src/generated/models/message';
-import { OrderState, Product } from '@commercetools/platform-sdk';
+import { Order,OrderState, Product } from '@commercetools/platform-sdk';
 import config from 'config';
 import { PaginatedProductResults } from '../../../../infrastructure/driven/commercetools/DefaultCtProductService';
 import { EventRequest } from '../../../../types/klaviyo-types';
@@ -44,22 +44,39 @@ export class OrderStateChangedEvent extends AbstractEventProcessor {
             }
         } while ((ctProductsResult as PaginatedProductResults)?.hasMore);
 
+        const metric = this.getOrderMetricByState(orderStateChangedMessage.orderState);
+
         const body: EventRequest = this.context.orderMapper.mapCtOrderToKlaviyoEvent(
             ctOrder,
             orderProducts,
-            this.getOrderMetricByState(orderStateChangedMessage.orderState),
+            metric,
             false,
             ctOrder.lastModifiedAt,
         );
 
-        return [
-            {
-                body,
-                type: 'event',
-            },
-        ];
+        const events: KlaviyoEvent[] = [{ body, type: 'event' }];
+
+        if (metric === config.get('order.metrics.fulfilledOrder')) {
+            this.getProductOrderedEventsFromOrder(events, ctOrder);
+        }
+
+        return events;
     }
 
+    private getProductOrderedEventsFromOrder(events: KlaviyoEvent[], order: Order) {
+        const eventTime: Date = new Date(order.lastModifiedAt);
+        eventTime.setSeconds(eventTime.getSeconds() + 1);
+        order?.lineItems?.forEach((lineItem) => {
+            events.push({
+                body: this.context.orderMapper.mapOrderLineToProductOrderedEvent(
+                    lineItem,
+                    order,
+                    eventTime.toISOString(),
+                ),
+                type: 'event',
+            });
+        });
+    }
     private isValidState(orderState: OrderState): boolean {
         return Boolean(
             config.has('order.states.changed') &&
